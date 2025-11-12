@@ -105,11 +105,11 @@
 
 2. 開啓終端機（Terminal），指向你的漫畫資料夾主目錄：
 
-```bash
+```markdown
 cd ~/[your_comic_floder]
 ```
 3. 使用 chmod 指令來升級腳本權限，供 5 個 shell 腳本正常使用：
-```bash
+```markdown
 chmod +x master_control.sh
 chmod +x forcerename.sh
 chmod +x actionmove.sh
