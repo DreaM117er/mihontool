@@ -76,7 +76,7 @@
  -----------------------------------------------
  0. 退出
  -----------------------------------------------
-請輸入選項 [0-6]: 2
+請輸入選項 [0-7]: 2
 --- 執行工作流程二： (命名 -> 建構 -> 轉換 -> 封裝) ---
 --- 執行 標準格式命名 (./forcerename.sh)...
 --- 執行 建制結構主體 (./actionmove.sh)...
@@ -94,3 +94,26 @@
 ```
 
 ## 使用方式及環境
+
+### A、使用環境
+
+我個人是使用 Linux Mint 作爲開發環境去建制這個腳本集，其他 Linux 版本的使用方式因系統終端指令差異我就不提及了。
+
+1. 將 mihontool 資料夾內部的 5 個 shell 腳本直接複製到你的漫畫資料夾主目錄。
+
+```
+Folder[your storage location]/local
+Folder[the series title]
+Filecover.jpg
+Folderchapter_1
+image_1.ext
+image_n.ext
+Folderchapter_2
+image_1.ext
+image_n.ext
+Folderchapter_n
+image_1.ext
+image_n.ext
+```
+
+2. 

@@ -332,7 +332,7 @@ while true; do
         exit 1
     fi
 
-    echo -n "請輸入選項 [0-6]: " >&2
+    echo -n "請輸入選項 [0-7]: " >&2
     read -r choice
 
     case "$choice" in
