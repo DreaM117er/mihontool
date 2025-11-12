@@ -101,19 +101,16 @@
 
 1. 將 mihontool 資料夾內部的 5 個 shell 腳本直接複製到你的漫畫資料夾主目錄。
 
-```
-Folder[your storage location]/local
-Folder[the series title]
-Filecover.jpg
-Folderchapter_1
-image_1.ext
-image_n.ext
-Folderchapter_2
-image_1.ext
-image_n.ext
-Folderchapter_n
-image_1.ext
-image_n.ext
-```
+2. 開啓終端機（Terminal），指向你的漫畫資料夾主目錄：
 
-2. 
+```
+cd ~/[your_comic_floder]
+```
+3. 接著使用 chmod 來升級腳本權限，供 5 個 shell 腳本正常使用：
+```
+chmod +x master_control.sh
+chmod +x forcerename.sh
+chmod +x actionmove.sh
+chmod +x auto_convert.sh
+chmod +x pack_cbz.sh
+```
