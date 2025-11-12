@@ -2,7 +2,7 @@
 
 ## 說明
 
-這是基於開源漫畫軟體 `Mihon` 所建制的一個 `Linux` 終端執行的 `Shell` 腳本工具集，可以用於以下條件：
+這是基於開源漫畫軟體 [`Mihon`](https://mihon.app/) 所建制的一個 `Linux` 終端執行的 `Shell` 腳本工具集，可以用於以下條件：
 1. 需要排序的圖片資料夾及漫畫檔案夾。
 2. 下載下來的漫畫資料夾檔案。
 3. 統一任意格式成 `.webp`。
@@ -17,7 +17,7 @@
 
 ![](pic/001.png) ![](pic/002.png)
 
-根據 `Mihon` 文本說明中的 [Local Source](https://mihon.app/docs/guides/local-source/#folder-structure) 裡的架構圖我們可以得知幾個方案：
+根據 [`Mihon`](https://mihon.app/) 文本說明中的 [Local Source](https://mihon.app/docs/guides/local-source/#folder-structure) 裡的架構圖我們可以得知幾個方案：
 
 ### 腳本邏輯
 
@@ -124,6 +124,6 @@ chmod +x pack_cbz.sh
 ## 建議及小提醒
 
 1. 如果是在電腦上分類檔案及資料夾，推薦使用**標準流程一**。
-2. 如果是使用 `Mihon` 的手機 `APP` ，不想**社死**請使用**標準流程二**。
+2. 如果是使用 [`Mihon`](https://mihon.app/) 的手機 `APP` ，不想**社死**請使用**標準流程二**。
 3. 我是因爲澀澀因素使用 AI 做了這個分類轉換腳本集，不得不感嘆"人的動力始於澀澀"
 4. 特別感謝 `Gemini` 的協助，讓我完成了這個腳本集，並且花了大約 4 天的時間除錯（`Flash v2.5`）。
