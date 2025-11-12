@@ -6,7 +6,7 @@ NEW_NAME_PREFIX="image_"
 DIGIT_COUNT=3          
 CHAPTER_FOLDER="chapter_1" # 固定章節資料夾名稱
 COVER_NAME="cover"     # 封面圖片名稱 (例如: cover.jpg)
-TARGET_EXTENSIONS="jpg jpeg png bmp JPG JPEG PNG BMP" # 允許的圖片副檔名
+TARGET_EXTENSIONS="jpg jpeg png bmp webp JPG JPEG PNG BMP WEBP" # 允許的圖片副檔名
 
 # 腳本報告及日誌檔
 ERROR_LOG="actionmove_errors_$(date +%Y%m%d_%H%M%S).log"

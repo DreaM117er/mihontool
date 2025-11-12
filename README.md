@@ -14,7 +14,7 @@
 
 ## 架構及邏輯
 
-![](pic/001.png) ![](pic/001.png)
+![](pic/001.png) ![](pic/002.png)
 
 根據 Mihon 文本說明中的 [Local Source](https://mihon.app/docs/guides/local-source/#folder-structure) 裡的架構圖我們可以得知幾個方案：
 
@@ -47,7 +47,14 @@
     1. 命名僅執行1次、轉換檔案1次、封裝1次、調整架構1次。
     2. 效率提升，可以批量處理。
     3. 任何單行本、同仁本、畫集都可以處理。
-    4. 簡化架構，chapter_2 之後的章節都很好處理。
+    4. 簡化架構，chapter_2 之後的章節都很好處理，但需要手動變更chapter_n。
 
 ## 腳本架構（方案B）
 
+|腳本(.sh)|主要功能|執行項目|
+|--|--|--|
+|forcerename|重新命名及排序|image_001.ext, image_002.ext, image_n.ext 排序|
+|actionmove|移動檔案及調整架構|將 image_n.ext 移入 chapter_1 及定義 image_001.ext 作爲 cover.ext使用|
+|auto_convert|轉換檔案格式|將任意圖片檔案轉換爲 webp 格式|
+|pack_cbz|封裝 chapter_1.cbz|封裝完畢之後移除 chapter_1 資料夾|
+|master_control|控制台|統合流程及報告產出|
