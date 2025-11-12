@@ -60,7 +60,9 @@
 |`pack_cbz`|封裝 `chapter_1.cbz`|封裝完畢之後移除 `chapter_1` 資料夾|
 |`master_control`|控制台|統合流程及報告產出|
 
-```
+```markdown
+# 終端機範例輸出執行結果
+
 =================================================
           🧰 批次漫畫處理 Master Control 🧰
 =================================================
@@ -103,11 +105,11 @@
 
 2. 開啓終端機（Terminal），指向你的漫畫資料夾主目錄：
 
-```
+```bash
 cd ~/[your_comic_floder]
 ```
-3. 接著使用 chmod 來升級腳本權限，供 5 個 shell 腳本正常使用：
-```
+3. 使用 chmod 指令來升級腳本權限，供 5 個 shell 腳本正常使用：
+```bash
 chmod +x master_control.sh
 chmod +x forcerename.sh
 chmod +x actionmove.sh
