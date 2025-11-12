@@ -99,20 +99,31 @@
 
 ### A、使用環境
 
-我個人是使用 Linux Mint 作爲開發環境去建制這個腳本集，其他 Linux 版本的使用方式因系統終端指令差異我就不提及了。
+我個人是使用 `Linux Mint` 作爲開發環境去建制這個腳本集，其他 `Linux` 版本的使用方式因系統終端指令差異我就不提及了。
 
-1. 將 mihontool 資料夾內部的 5 個 shell 腳本直接複製到你的漫畫資料夾主目錄。
+1. 將 `mihontool` 資料夾內部的 `5` 個 `shell` 腳本直接複製到你的漫畫資料夾主目錄。
 
-2. 開啓終端機（Terminal），指向你的漫畫資料夾主目錄：
+2. 開啓終端機（`Terminal`），指向你的漫畫資料夾主目錄：
 
-```markdown
+```bash
 cd ~/[your_comic_floder]
 ```
-3. 使用 chmod 指令來升級腳本權限，供 5 個 shell 腳本正常使用：
-```markdown
+3. 使用 `chmod` 指令來升級腳本權限，供 `shell` 腳本正常使用：
+```bash
 chmod +x master_control.sh
 chmod +x forcerename.sh
 chmod +x actionmove.sh
 chmod +x auto_convert.sh
 chmod +x pack_cbz.sh
 ```
+4. 輸入下面的指令啓動 `shell` 腳本：
+```bash
+ ./master_control.sh
+```
+
+## 建議及小提醒
+
+1. 如果是在電腦上分類檔案及資料夾，推薦使用**標準流程一**。
+2. 如果是使用 `Mihon` 的手機 `APP` ，不想**社死**請使用**標準流程二**。
+3. 我是因爲澀澀因素使用 AI 做了這個分類轉換腳本集，不得不感嘆"人的動力始於澀澀"
+4. 特別感謝 `Gemini` 的協助，讓我完成了這個腳本集，並且花了大約 4 天的時間除錯（`Flash v2.5`）。
