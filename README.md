@@ -41,7 +41,7 @@
     1. 排序圖片檔案及重新命名，以 `image_001.ext`、`image_002.ext` 做區分。
     2. 新增一個 `chapter_1` 資料夾作爲主架構，將 `image_n.ext` 移動到內部。
     3. 因爲電子檔漫畫多半以第 `1` 張圖片爲封面，因此將 `image_001.ext` 作爲漫畫封面使用（`cover.ext`）。
-    4. 轉換內部的圖片檔案爲 webp。
+    4. 轉換內部的圖片檔案爲 `webp` 格式。
     5. 選擇性封裝 `chapter_1` 資料夾爲 `.cbz`
 
 - **執行結果：**
@@ -106,7 +106,7 @@
 2. 開啓終端機（`Terminal`），指向你的漫畫資料夾主目錄：
 
 ```bash
-cd ~/[your_comic_floder]
+cd ~/[your_comic_folder]
 ```
 3. 使用 `chmod` 指令來升級腳本權限，供 `shell` 腳本正常使用：
 ```bash
