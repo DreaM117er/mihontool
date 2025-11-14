@@ -30,7 +30,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     
     # 安全檢查：若存在 mi/md 終端信標，則跳過並移除 m1/m0，避免再次處理
     if [ -f "${DIR_PATH}/mi" ] || [ -f "${DIR_PATH}/md" ]; then
-        echo "   ✅ 已完成或封裝 ➡️ 跳過。" >&2
+        echo "   ✅ 已完成或封裝 ➡️  跳過。" >&2
         rm -f "$DIR_PATH/$MARKER_PRESENT"
         continue 
     fi
@@ -53,7 +53,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     done
     
     if ! $found_files; then
-        echo "   ❌ 未找到圖片 ➡️ 跳過。" >&2
+        echo "   ❌ 未找到圖片 ➡️  跳過。" >&2
         rm -f "$temp_list"
         continue
     fi
@@ -97,6 +97,8 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     else
         # 更名失敗，維持舊信標 (m1/m0)，等待下次處理
         echo "   ❌ 處理失敗，等待下次處理。" >&2
+        rm -f "$DIR_PATH/$MARKER_PRESENT"
+        touch "${DIR_PATH}/mf"
     fi
 
 done

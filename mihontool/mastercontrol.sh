@@ -62,45 +62,45 @@ function clean_logs() {
 
 # 執行主要轉換腳本前的「標記與檢查」預處理
 function pre_process_check() {
-    echo "---" >&2
-    
     # 步驟 1: 執行 MARKDOWN_SCRIPT (核心信標掃描)
     if [ -f "$MARKDOWN_SCRIPT" ]; then
         echo "▶️  啓動 ${MARKDOWN_SCRIPT} 腳本..." >&2
         ./"$MARKDOWN_SCRIPT"
         echo "---" >&2
         echo "✅ ${MARKDOWN_SCRIPT} 執行完成。" >&2
+        echo "---" >&2
     else
         echo "---" >&2
         echo "❌ 錯誤：找不到 ${MARKDOWN_SCRIPT}，跳過執行。" >&2
+        echo "---" >&2
     fi
-    echo "---" >&2
+    
     # 步驟 2: 執行 F_RENAME_SCRIPT (單圖命名/檢查結構完整性)
     if [ -f "$F_RENAME_SCRIPT" ]; then
         echo "▶️  啓動 ${F_RENAME_SCRIPT} 腳本..." >&2
         ./"$F_RENAME_SCRIPT"
         echo "---" >&2
         echo "✅ ${F_RENAME_SCRIPT} 執行完成。" >&2
+        echo "---" >&2
     else
         echo "---" >&2
         echo "❌ 錯誤：找不到 ${F_RENAME_SCRIPT}！" >&2
+        echo "---" >&2
     fi
-    echo "---" >&2
 }
 
 # 帶有 Y/N 確認的執行函數
 function execute_with_confirm() {
     local option_name="$1"
     local scripts_to_run=("$@")
-    
     read -r -p "❓ 確認執行 ${option_name} 嗎？ (Y/N 或 y/n): " response
+    echo "---" >&2
     
     if [[ "$response" =~ ^[Yy]$ ]]; then
         # 標準流程和單獨執行流程，需先執行預處理
         if [ "$option_name" != "資料夾狀態" ]; then
             pre_process_check
         fi
-        
         # 移除第一個參數 (option_name)，只留下腳本清單
         local i=0
         for script in "${scripts_to_run[@]}"; do
@@ -119,8 +119,8 @@ function execute_with_confirm() {
             fi
             i=$((i+1))
         done
-        echo "---" >&2
         return 0
+        echo "---" >&2
     else
         echo "---" >&2
         echo "操作已取消。" >&2
@@ -149,6 +149,7 @@ function display_menu() {
     echo "0. 關閉主控臺"
     echo "---"
     read -r -p "💻 輸入數字 0-9 來選擇執行項目: " CHOICE
+    echo "---"
 }
 
 
@@ -167,68 +168,69 @@ while true; do
     case $CHOICE in
         # 選項 1: 資料夾狀態 (單獨執行 folderstate.sh，不需要 Y/N 確認)
         1)
-            echo "---" >&2
             echo "當前資料夾狀態" >&2
-            ./"$FOLDER_STATE_SCRIPT"
             echo "---" >&2
+            ./"$FOLDER_STATE_SCRIPT"
+            echo "---"
             ;;
             
         # 選項 2: 資料夾標記及檢查 (執行預處理，不需要 Y/N 確認)
         2)
             pre_process_check
+            echo "確認資料夾狀態..." >&2
+            echo "---" >&2
             ./"$FOLDER_STATE_SCRIPT"
             echo "---"
             ;;
         
         # 流程一：需要 Y/N 確認，並在 execute_with_confirm 內部執行預處理
         3)
-            echo "---"
             execute_with_confirm "完整結構主體調整流程" \
                 "$CONVERT_SCRIPT" \
                 "$RENAME_SCRIPT" \
                 "$ACTION_MOVE_SCRIPT"
+            echo "---"
             ;;
 
         # 流程二：需要 Y/N 確認，並在 execute_with_confirm 內部執行預處理
         4)
-            echo "---"
             execute_with_confirm "完整結構主體封裝流程" \
                 "$CONVERT_SCRIPT" \
                 "$RENAME_SCRIPT" \
                 "$ACTION_MOVE_SCRIPT" \
                 "$PACK_CBZ_SCRIPT"
+            echo "---"
             ;;
 
         # 單獨執行：轉檔
         5)
-            echo "---"
             execute_with_confirm "webp 轉換" \
                 "$CONVERT_SCRIPT"
+            echo "---"
             ;;
 
         # 單獨執行：命名 (只包含 forcerename.sh)
         6)
-            echo "---"
             execute_with_confirm "標準化命名" \
                 "$RENAME_SCRIPT"
+            echo "---"
             ;;
 
         # 單獨執行：結構調整
         7)
-            echo "---"
             execute_with_confirm "chapter_1 主體結構建立" \
                 "$ACTION_MOVE_SCRIPT"
+            echo "---"
             ;;
 
         # 單獨執行：封裝
         8)
-            echo "---"
             execute_with_confirm "chapter_1 主體結構封裝" \
                 "$PACK_CBZ_SCRIPT"
+            echo "---"
             ;;
 
         9)
-            echo "---"
             clean_logs
             ;;
 
@@ -240,13 +242,12 @@ while true; do
             ;;
             
         *)
-            echo "---"
             echo "無效輸入，請再輸入一次。" >&2
             echo "---"
             sleep 1
             ;;
     esac
-    
+
     read -r -p "按 Enter 清除當前結果並繼續執行流程項目..."
     clear
 done

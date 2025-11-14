@@ -24,7 +24,7 @@ do
     fi
     
     if [ -f "${DIR}/mi" ] || [ -f "${DIR}/md" ]; then
-        echo "➡️ 跳過: $DIR (已包含 mi/md 終端信標)" >&2
+        echo "   ✅ 已完成或封裝 ➡️  跳過。" >&2
         continue 
     fi
 
@@ -97,12 +97,18 @@ do
 
         else
             echo "   ❌ 錯誤：無法重新命名 ${TARGET_IMAGE}。" >&2
+            rm -f "${DIR}/m3"
+            touch "${DIR}/mf"
         fi
         
     elif [ "$IMAGE_COUNT" -gt 1 ]; then
         echo "   ❌ 錯誤：發現 $IMAGE_COUNT 個圖片檔案，主體結構有問題 ➡️ 跳過。" >&2
+        rm -f "${DIR}/m3"
+        touch "${DIR}/mf"
     else
         echo "   ❌ 警告：未找到非 cover.ext 命名的單一圖片檔案 / 存在其他不相干的檔案 ➡️ 跳過。" >&2
+        rm -f "${DIR}/m3"
+        touch "${DIR}/mf"
     fi
 
 done

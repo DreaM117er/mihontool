@@ -78,11 +78,15 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
             
         else
             echo "   ❌ 封裝失敗: $DIR_PATH/$CHAPTER_FOLDER (Zip 錯誤)" >> "$ERROR_LOG"
+            rm "$DIR_PATH/mi"
+            touch "$DIR_PATH/mf"
         fi
 
     else
         # mi 標記存在但 chapter_1 不存在，結構異常
         echo "   ❌ 資料夾內未找到 $CHAPTER_FOLDER，結構異常 ➡️ 跳過。" >&2
+        rm "$DIR_PATH/mi"
+        rm "$DIR_PATH/mf"
     fi
 
 done

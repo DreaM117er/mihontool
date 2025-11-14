@@ -10,6 +10,7 @@ TARGET_EXTENSIONS="jpg jpeg png bmp webp JPG JPEG PNG BMP WEBP" # 允許的圖�
 
 echo "---" >&2
 echo "執行及建立 Mihon 漫畫結構目錄主體..." >&2
+echo "---" >&2
 
 # 函數：執行單一資料夾的準備工作 (複製封面/建立章節資料夾/移動)
 function process_series_folder() {
@@ -18,7 +19,7 @@ function process_series_folder() {
 
     # **檢查是否已存在 chapter_1，如果存在則跳過**
     if [ -d "$DIR_PATH/$CHAPTER_FOLDER" ]; then
-        echo "   ✅ chapter_1 已存在 ➡️ 跳過。" >&2
+        echo "   ✅ chapter_1 已存在 ➡️  跳過。" >&2
         return 0 # 返回 0 視為成功/跳過
     fi
 
@@ -48,7 +49,7 @@ function process_series_folder() {
     echo "   🔎 合計有 $TOTAL_IMAGE_COUNT 張漫畫圖片。" >&2
     
     if [ "$TOTAL_IMAGE_COUNT" -eq 0 ]; then
-        echo "   ❌ 資料夾內無圖片 ➡️ 跳過。" >&2
+        echo "   ❌ 資料夾內無圖片 ➡️  跳過。" >&2
         return 1
     fi
 
@@ -129,6 +130,9 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     else
         # 處理失敗時，保留 m4，等待下次處理或手動檢查
         echo "   ❌ 處理失敗，等待下次處理或手動檢查" >&2
+        rm "${DIR_PATH}/m4"
+        touch "${DIR_PATH}/mf" # <<<--- 新增 mf 標記
+        echo "---" >&2 
     fi
     
 done
