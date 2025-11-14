@@ -1,37 +1,33 @@
 #!/bin/bash
 
-# --- 配置參數 (必須與 forcerename.sh 保持一致) ---
-# forcerename.sh 預設為 NEW_NAME_PREFIX="image_" DIGIT_COUNT=3
+# --- 配置參數 ---
+# 必須與 forcerename.sh 保持一致
 NEW_NAME_PREFIX="image_" 
 DIGIT_COUNT=3          
 CHAPTER_FOLDER="chapter_1" # 固定章節資料夾名稱
 COVER_NAME="cover"     # 封面圖片名稱 (例如: cover.jpg)
 TARGET_EXTENSIONS="jpg jpeg png bmp webp JPG JPEG PNG BMP WEBP" # 允許的圖片副檔名
 
-# 腳本報告及日誌檔
-ERROR_LOG="actionmove_errors_$(date +%Y%m%d_%H%M%S).log"
-TEMP_SUCCESS_LOG="temp_actionmove_success_log_$$"
+echo "---" >&2
+echo "執行及建立 Mihon 漫畫結構目錄主體..." >&2
 
 # 函數：執行單一資料夾的準備工作 (複製封面/建立章節資料夾/移動)
 function process_series_folder() {
-local DIR_PATH="$1"
+    local DIR_PATH="$1"
     local prep_ok=true
 
-    # **新增：檢查是否已存在 chapter_1，如果存在則跳過**
+    # **檢查是否已存在 chapter_1，如果存在則跳過**
     if [ -d "$DIR_PATH/$CHAPTER_FOLDER" ]; then
-        echo "➡️ 跳過: $DIR_PATH (chapter_1 已存在，跳過結構建制)" >&2
-        return 0
+        echo "   ✅ chapter_1 已存在 ➡️ 跳過。" >&2
+        return 0 # 返回 0 視為成功/跳過
     fi
 
     # 1. 尋找 forcerename.sh 產生的第一張圖片 (例如 image_001.ext)
     local first_image_path=""
+    local first_image_ext=""
     local found_first_image=false
 
-    # 尋找所有 image_*.ext 檔案 (不限定位數)
-    # 注意：這裡依賴 ls -v 的順序，但因為 forcerename.sh 已經保證了編號從 1 開始，
-    # 且是該目錄下編號最小的圖片，所以可以尋找 image_1.* 或 image_001.*
     for ext in $TARGET_EXTENSIONS; do
-        # 使用 printf -v 確保沒有換行符
         printf -v check_path_padded "$DIR_PATH/%s%0${DIGIT_COUNT}d.$ext" "$NEW_NAME_PREFIX" 1
         
         if [ -f "$check_path_padded" ]; then
@@ -43,10 +39,19 @@ local DIR_PATH="$1"
     done
 
     if ! $found_first_image; then
-        echo "➡️ 跳過: $DIR_PATH (未找到 ${NEW_NAME_PREFIX}001.* 圖片，可能已處理或無圖片)" >&2
-        return 0
+        echo "   ❌ 找不到 ${NEW_NAME_PREFIX}001.* 圖片 ➡️ 跳過。" >&2
+        return 1 # 找不到圖片，視為處理失敗
     fi
     
+    # 【新增邏輯 A】：計算總圖片數 (預期移動數)
+    TOTAL_IMAGE_COUNT=$(find "$DIR_PATH" -maxdepth 1 -type f -name "${NEW_NAME_PREFIX}*.*" | wc -l)
+    echo "   🔎 合計有 $TOTAL_IMAGE_COUNT 張漫畫圖片。" >&2
+    
+    if [ "$TOTAL_IMAGE_COUNT" -eq 0 ]; then
+        echo "   ❌ 資料夾內無圖片 ➡️ 跳過。" >&2
+        return 1
+    fi
+
     # 2. 建立章節資料夾，複製封面
     local CHAPTER_DIR="$DIR_PATH/$CHAPTER_FOLDER"
     mkdir -p "$CHAPTER_DIR"
@@ -54,60 +59,80 @@ local DIR_PATH="$1"
     # 複製第一張圖為封面 (在根目錄)
     local COVER_PATH="$DIR_PATH/$COVER_NAME.$first_image_ext"
     if cp -f "$first_image_path" "$COVER_PATH"; then
-        echo "✅ 複製封面: $COVER_PATH" >&2
+        echo "   ✅ 建立封面成功。" >&2
     else
-        echo "❌ 錯誤：複製封面 $first_image_path 失敗。" >> "$ERROR_LOG"
+        echo "   ❌ 建立封面失敗。" >&2
         prep_ok=false
     fi
 
-    # 3. 移動所有圖片到章節資料夾 (除了封面副本)
+    # 3. 移動所有圖片到章節資料夾
     local moved_count=0
     
-    # 尋找所有 'image_*.ext' 檔案，排除封面副本
-    local image_files=$(find "$DIR_PATH" -maxdepth 1 -type f -name "${NEW_NAME_PREFIX}*.*" -print0 | tr '\0' '\n' | grep -v "$COVER_NAME.$first_image_ext") 
-
-    echo "$image_files" | while IFS= read -r IMAGE_FILE; do
-        if [ -n "$IMAGE_FILE" ] && [ -f "$IMAGE_FILE" ]; then
-            if mv -f "$IMAGE_FILE" "$CHAPTER_DIR/"; then
-                moved_count=$((moved_count + 1))
-            else
-                echo "❌ 錯誤：移動 $IMAGE_FILE 到 $CHAPTER_DIR 失敗。" >> "$ERROR_LOG"
-                prep_ok=false
-            fi
+    # <--- FIX: 修正 Subshell 和無限迴圈問題 --->
+    local temp_file=$(mktemp)
+    # 將 find 輸出寫入臨時檔案
+    find "$DIR_PATH" -maxdepth 1 -type f -name "${NEW_NAME_PREFIX}*.*" -print0 > "$temp_file"
+    
+    # **關鍵修正：將 < "$temp_file" 放在 done 之後**
+    # 這樣 while 迴圈會在當前 Shell 執行，並正確讀取整個檔案直到結束
+    while IFS= read -r -d $'\0' IMAGE_FILE; do 
+        
+        if mv -f "$IMAGE_FILE" "$CHAPTER_DIR/"; then
+            moved_count=$((moved_count + 1))
+        else
+            echo "   ❌ 錯誤：移動 $IMAGE_FILE 到 $CHAPTER_DIR 失敗。" >&2
+            prep_ok=false
         fi
-    done
+    done < "$temp_file" # <--- CORRECTED POSITION
 
-    if $prep_ok; then
-        echo "✅ 成功: $DIR_PATH (建立 $CHAPTER_FOLDER 結構，移動 $moved_count 張圖片)" >&2
-        echo "success" >> "$TEMP_SUCCESS_LOG"
-        return 0
+    rm -f "$temp_file" # 清理臨時檔案
+    # <--- END FIX --->
+
+    # 修正計數邏輯：報告預期總數與實際移動數
+    if $prep_ok && [ "$moved_count" -eq "$TOTAL_IMAGE_COUNT" ]; then
+        echo "   ✅ 已建立 $CHAPTER_FOLDER，移動 $moved_count / $TOTAL_IMAGE_COUNT 張圖片。" >&2
+        return 0 # 成功
     else
-        echo "❌ 失敗: $DIR_PATH (移動/複製階段出錯)" >&2
-        echo "$DIR_PATH (移動/複製階段出錯)" >> "$ERROR_LOG"
-        return 1
+        # 如果移動數量不符，或者有檔案移動失敗
+        prep_ok=false
+        echo "   ❌ 失敗: 移動階段出錯 ($moved_count / $TOTAL_IMAGE_COUNT 移動成功)。" >&2
+        return 1 # 失敗
     fi
 }
 
 # --- 主要執行邏輯 (批次處理) ---
-echo "📖 開始執行批次漫畫結構準備 (封面/Chapter_01 資料夾/移動)..." >&2
-echo "錯誤日誌將寫入到 $ERROR_LOG" >&2
-echo "------------------------------------------------------------------" >&2
-
-> "$ERROR_LOG"
-> "$TEMP_SUCCESS_LOG"
 
 # 尋找所有一級子資料夾
 find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR_PATH; do
-    process_series_folder "$DIR_PATH"
+    
+    # 1. 核心過濾檢查 (必須有 m4)
+    if [ ! -f "${DIR_PATH}/m4" ]; then
+        continue 
+    fi
+    
+    # 2. 安全檢查 (終端信標跳過)
+    if [ -f "${DIR_PATH}/mi" ] || [ -f "${DIR_PATH}/md" ]; then
+        echo "   ✅ 已完成或封裝 ➡️ 跳過。" >&2
+        continue 
+    fi
+
+    echo "▶️  正在處理 $DIR_PATH" >&2
+    
+    # 執行處理函式
+    if process_series_folder "$DIR_PATH"; then
+        # 成功後：1. 移除 m4 2. 新增 mi
+        if [ -f "${DIR_PATH}/m4" ]; then
+            rm "${DIR_PATH}/m4"
+            touch "${DIR_PATH}/mi" # <<<--- 新增 mi 標記
+            echo "---" >&2 
+        fi
+    else
+        # 處理失敗時，保留 m4，等待下次處理或手動檢查
+        echo "   ❌ 處理失敗，等待下次處理或手動檢查" >&2
+    fi
+    
 done
 
-# --- 最終統計 (輸出報告給 Master) ---
-SUCCESS_COUNT=$(wc -l < "$TEMP_SUCCESS_LOG" 2>/dev/null)
-FAILURE_COUNT=$(wc -l < "$ERROR_LOG" 2>/dev/null)
-TOTAL_DIRS=$(($SUCCESS_COUNT + $FAILURE_COUNT))
+echo "漫畫結構目錄主體建立作業已完成。" >&2
 
-if [ -f "$TEMP_SUCCESS_LOG" ]; then rm "$TEMP_SUCCESS_LOG"; fi
-
-# 輸出給 Master Control Script 捕捉：成功目錄數, 錯誤目錄數, 總目錄數
-echo "$SUCCESS_COUNT,$FAILURE_COUNT,$TOTAL_DIRS" | tr -d ' \n\r'
 exit 0

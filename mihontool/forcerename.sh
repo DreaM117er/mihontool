@@ -1,103 +1,106 @@
 #!/bin/bash
 
-# --- 配置參數 (可依需求調整) ---
+# --- 配置參數 ---
 # 設定要處理的圖檔類型 (以空格分隔)
 TARGET_EXTENSIONS="jpg jpeg png webp JPG JPEG PNG WEBP"
-NEW_NAME_PREFIX="image_" # 新檔名開頭 (例如: page_001.jpg)
+NEW_NAME_PREFIX="image_" # 新檔名開頭 (例如: image_001.jpg)
 DIGIT_COUNT=3          # 編號位數 (例如: 3位數會產生 001, 002...)
 
-# 腳本報告及日誌檔 (與 rename.sh 結構相似)
-ERROR_LOG="force_rename_errors_$(date +%Y%m%d_%H%M%S).log"
-TEMP_SUCCESS_LOG="temp_force_rename_success_log_$$"
+echo "---" >&2
+echo "執行標準化命名..." >&2
+echo "---" >&2
 
-echo "🚀 開始階段一：多圖檔類型、順序命名規範化 (遞迴執行)..." >&2
-echo "錯誤日誌將寫入到 $ERROR_LOG" >&2
-echo "--------------------------------------------------" >&2
-
-> "$ERROR_LOG"
-> "$TEMP_SUCCESS_LOG"
-
-# --- 核心邏輯：Find + -exec 執行 (所有 echo 皆導向 >&2) ---
-# 尋找所有子資料夾 (排除當前目錄 .)，並對每個資料夾執行更名操作
-find . -mindepth 1 -type d -exec sh -c '
-    DIR_PATH="$0"
-    ERROR_LOG="$1"
-    TEMP_SUCCESS_LOG="$2"
+# 尋找所有一級子資料夾
+find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR_PATH; do
     
-    # 內建配置 (從外部繼承)
-    TARGET_EXTENSIONS="'"$TARGET_EXTENSIONS"'" 
-    NEW_NAME_PREFIX="'"$NEW_NAME_PREFIX"'"
-    DIGIT_COUNT="'"$DIGIT_COUNT"'"
+    # --- 1. 檢查並設定信標狀態 ---
+    MARKER_PRESENT=""
+    NEXT_MARKER=""
     
+    if [ -f "$DIR_PATH/m1" ]; then
+        MARKER_PRESENT="m1"
+        NEXT_MARKER="m2" # m1 (無前綴, 非WEBP) -> 更名 -> m2 (有前綴, 非WEBP)
+    elif [ -f "$DIR_PATH/m0" ]; then
+        MARKER_PRESENT="m0"
+        NEXT_MARKER="m4" # m0 (無前綴, WEBP) -> 更名 -> m4 (有前綴, WEBP)
+    else
+        # 沒有 m1 或 m0，跳過
+        continue
+    fi
+    
+    # 安全檢查：若存在 mi/md 終端信標，則跳過並移除 m1/m0，避免再次處理
+    if [ -f "${DIR_PATH}/mi" ] || [ -f "${DIR_PATH}/md" ]; then
+        echo "   ✅ 已完成或封裝 ➡️ 跳過。" >&2
+        rm -f "$DIR_PATH/$MARKER_PRESENT"
+        continue 
+    fi
+
+    echo "▶️  處理資料夾 $DIR_PATH" >&2
+
+    # --- 2. 準備檔案列表 ---
     count=1
     rename_ok=true
     temp_list=$(mktemp)
-    
-    # 1. 構建 ls -v 指令並過濾檔案
     ls_command="ls -v"
     found_files=false
     
-    # 檢查該目錄下是否有符合目標副檔名的檔案
+    # 構建 ls -v 指令並過濾目標副檔名的檔案
     for ext in $TARGET_EXTENSIONS; do
         if ls "$DIR_PATH"/*.$ext 1> /dev/null 2>&1; then
-            # 找到符合的檔案，將其加入 ls 列表
             ls_command="${ls_command} \"$DIR_PATH\"/*.$ext"
             found_files=true
         fi
     done
     
-    # 如果沒有找到任何圖片，則跳過此目錄
     if ! $found_files; then
-        return 0
+        echo "   ❌ 未找到圖片 ➡️ 跳過。" >&2
+        rm -f "$temp_list"
+        continue
     fi
 
-    # 執行 ls -v 並將結果存入臨時文件，以確保正確的自然排序
+    # 執行 ls -v（按字母順序排列）並將結果存入臨時文件
     eval "$ls_command" > "$temp_list"
 
-    # 2. 讀取列表並更名
+    # --- 3. 執行更名 ---
     while IFS= read -r old_file; do
-        if [ ! -f "$old_file" ]; then continue; fi
+        # 確保檔案存在且只處理當前目錄下的檔案
+        if [ ! -f "$old_file" ] || [[ "$(dirname "$old_file")" != "$DIR_PATH" ]]; then continue; fi
 
-        # 獲取檔案副檔名
         ext="${old_file##*.}"
         
-        # 產生新的檔名 (例如: page_001.jpg)
+        # 建立新的檔名 (例如: image_001.jpg)
         format_str="${NEW_NAME_PREFIX}%0${DIGIT_COUNT}d.${ext}"
         new_file_basename=$(printf "$format_str" "$count")
-        
-        # 完整的目標路徑
         new_file_path="$DIR_PATH/$new_file_basename"
 
         # 執行更名
         if ! mv -f "$old_file" "$new_file_path"; then
-            # --- 更名失敗，記錄並中斷目錄處理 ---
-            echo "$old_file (更名失敗)" >> "$ERROR_LOG"
+            echo "   ❌ 目標檔案 $old_file 更名失敗，停止後續操作。)" >&2
             rename_ok=false
-            echo "⚠️ 錯誤中斷: $DIR_PATH (檔案 $old_file 更名失敗，停止後續操作)" >&2
-            echo "$DIR_PATH (更名中斷)" >> "$ERROR_LOG"
             break
-            # -------------------------------------
         else
             count=$((count + 1))
         fi
     done < "$temp_list"
     
-    # 3. 清理臨時檔案
-    rm -f "$temp_list" 2>/dev/null
+    rm -f "$temp_list"
     
+    # --- 4. 處理信標轉換 ---
     if $rename_ok; then
-        echo "✅ 成功: $DIR_PATH (更名 $((count - 1)) 個檔案)" >&2
-        echo "success" >> "$TEMP_SUCCESS_LOG" # 記錄成功更名的目錄路徑
+        SUCCESS_COUNT_IN_DIR=$((count - 1))
+        echo "   ✅ 轉換成功，合計 $SUCCESS_COUNT_IN_DIR 個檔案。" >&2
+        
+        # 信標轉換 (移除舊信標，新增新信標)
+        rm -f "$DIR_PATH/$MARKER_PRESENT"
+        touch "$DIR_PATH/$NEXT_MARKER"
+        echo "---" >&2
+    else
+        # 更名失敗，維持舊信標 (m1/m0)，等待下次處理
+        echo "   ❌ 處理失敗，等待下次處理。" >&2
     fi
-' {} "$ERROR_LOG" "$TEMP_SUCCESS_LOG" \;
 
-# --- 最終統計 (僅輸出數據到 STDOUT，格式為 成功數,失敗數,總數) ---
-SUCCESS_COUNT=$(grep -c "success" "$TEMP_SUCCESS_LOG")
-FAILURE_COUNT=$(grep -c "更名中斷" "$ERROR_LOG")
-TOTAL_DIRS=$(find . -mindepth 1 -type d | wc -l)
+done
 
-# 輸出給 Master Control Script 捕捉
-echo "$SUCCESS_COUNT,$FAILURE_COUNT,$TOTAL_DIRS" | tr -d ' \n\r'
+echo "標準化命名已完成。" >&2
 
-echo "--------------------------------------------------" >&2
-echo "🎉 批次命名完成：成功資料夾 $SUCCESS_COUNT 個，錯誤資料夾 $FAILURE_COUNT 個。" >&2
+exit 0
