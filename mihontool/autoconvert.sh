@@ -4,10 +4,15 @@
 SOURCE_EXTS="jpg,jpeg,png,bmp,JPG,JPEG,PNG,BMP"
 TARGET_EXT="webp"
 QUALITY=80
+MAIN_DIR="$(pwd)" 
+ERROR_LOG="$MAIN_DIR/autoconvert-error-$(date +%Y%m%d%H%M%S).log" # 新增錯誤日誌路徑
 
 echo "---" >&2
-echo "執行 webp 轉換..." >&2 # 導向 STDERR
+echo "執行 webp 轉換..." >&2
 echo "---" >&2
+
+# 確保 error log 是空的或創建它
+> "$ERROR_LOG"
 
 # 構建 find 篩選條件字串
 FIND_FILTER_STRING=""
@@ -43,8 +48,9 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     fi
     
     # 安全檢查 (終端信標跳過)
-    if [ -f "${DIR_PATH}/mi" ] || [ -f "${DIR_PATH}/md" ]; then
-        echo "   ✅ 已完成或封裝 ➡️ 跳過: $DIR_PATH" >&2
+    # **注意：這裡也新增了對 'mf' 標記的檢查，如果已標記 mf 則跳過，防止重複嘗試失敗**
+    if [ -f "${DIR_PATH}/mi" ] || [ -f "${DIR_PATH}/md" ] || [ -f "${DIR_PATH}/mf" ]; then 
+        echo "   ✅ 已完成、封裝或已標記 mf ➡️ 跳過: $DIR_PATH" >&2
         rm -f "$DIR_PATH/$MARKER_PRESENT"
         continue 
     fi
@@ -64,14 +70,19 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
         # 檢查目標檔案是否已存在，並清理來源檔案
         if [ -f "$target_webp" ]; then
             if [ -f "$file" ]; then rm "$file"; fi
-            # 注意：這裡不再進行 DIR_SUCCESS_COUNT 遞增
         else
             # 嘗試轉換
             if convert "$file" -quality "$QUALITY" "$target_webp"; then
                 # 轉換成功後刪除原始檔案
                 rm "$file"
             else
+                # 轉換失敗處理
                 echo "   ❌ 檔案 $file 轉換失敗。" >&2
+                
+                # **記錄到錯誤日誌**
+                ERROR_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') - 資料夾: $DIR_PATH - 檔案: $(basename "$file") 轉換失敗。"
+                echo "$ERROR_MESSAGE" >> "$ERROR_LOG"
+                
                 DIR_FAILURE_FLAG=true # 設置目錄失敗標記
             fi
         fi
@@ -80,11 +91,13 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     # 3. 檢查目錄狀態並更新信標
     if $DIR_FAILURE_FLAG; then
         # 轉換失敗 (只要有一個檔案失敗就算失敗)
-        echo "   ❌ 轉換失敗 ➡️ 保留 $MARKER_PRESENT，下次重試。" >&2
+        echo "   ❌ 轉換失敗 ➡️ 新增 mf 標記並保留 $MARKER_PRESENT。" >&2
+        
+        # **新增 mf 標記**
+        touch "$DIR_PATH/mf" 
         
     else
         # 轉換成功
-        # 修正：直接計算當前資料夾中 TARGET_EXT (webp) 檔案的數量
         SUCCESS_COUNT=$(find "$DIR_PATH" -maxdepth 1 -type f -iname "*.${TARGET_EXT}" | wc -l)
         
         echo "   ✅ 轉換成功，合計 $SUCCESS_COUNT 個檔案。" >&2
@@ -98,5 +111,6 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
 done
 
 echo "轉換作業完成。" >&2
+echo "請檢查 $ERROR_LOG 以查看轉換失敗的詳情。" >&2
 
 exit 0
