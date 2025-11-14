@@ -62,6 +62,9 @@
 - 只會執行帶有 `mi` 標記的資料夾，將 `chapter_1` 資料夾封裝成 `cbz`。
 - 可選擇單獨執行或是完整流程執行。
 
+#### folderstate.sh
+- 資料夾當前狀態，專門統計資料夾內的所有標記。
+
 #### mastercontrol.sh
 - 控制台腳本
 - 在選擇執行任何項目前都會先後執行 `markdown.sh` + `frename.sh`。
