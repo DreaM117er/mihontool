@@ -13,6 +13,10 @@
 1. 重要：請勿用來做非法用途，不鼓勵任何侵犯著作權之行爲。
 2. 提供 `Shell` 腳本及使用方式，歡迎你做任何的修正修改。
 
+## 已知問題
+1. 轉換檔案失敗，不會輸出autoconvert-error-xxxxxxxxxxxx.log。
+2. 資料夾內有 chapter_1 資料夾或 chapter_1.cbz 其一且cover.ext也存在時，其他的 anyname.ext 存在時不會被標記爲 mf。
+
 ## 架構及邏輯
 
 ![](pic/001.png) ![](pic/002.png)
