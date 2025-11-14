@@ -80,7 +80,7 @@
 |腳本(`.sh`)|主要功能|執行項目|
 |--|--|--|
 |`markdown`|重新命名及排序|`image_001.ext`, `image_002.ext`, `image_n.ext` 排序|
-|`folderstate`|重新命名及排序|`image_001.ext`, `image_002.ext`, `image_n.ext` 排序|
+|`folderstate`|資料夾狀態統計|掃描標記及資料夾|
 |`autoconvert`|轉換檔案格式|將任意圖片檔案轉換爲 `.webp` 格式|
 |`forcerename`|重新命名及排序|`image_001.ext`, `image_002.ext`, `image_n.ext` 排序|
 |`actionmove`|移動檔案及調整架構|將 `image_n.webp` 移入 `chapter_1` 及定義 `image_001.webp` 作爲 `cover.webp` 使用|
