@@ -10,7 +10,7 @@ SCRIPT_LIST=(
     "packcbz.sh"
     "folderstate.sh"
     "markdown.sh"
-    "frename.sh"
+    "covercheck.sh"
 )
 
 # 核心腳本定義
@@ -20,7 +20,7 @@ ACTION_MOVE_SCRIPT="actionmove.sh"
 PACK_CBZ_SCRIPT="packcbz.sh"
 FOLDER_STATE_SCRIPT="folderstate.sh" # 資料夾狀態檢查
 MARKDOWN_SCRIPT="markdown.sh"       # 核心信標掃描
-F_RENAME_SCRIPT="frename.sh"        # m3/單圖處理 (信標檢查的最後一步)
+F_RENAME_SCRIPT="covercheck.sh"        # m3/單圖處理 (信標檢查的最後一步)
 
 echo "---" >&2
 echo "執行漫畫批次處理主控台前置作業。" >&2
@@ -50,11 +50,11 @@ function set_permissions() {
 
 # 清除歷史日誌檔案
 function clean_logs() {
-    echo "正在清除歷史日誌檔案 (.log, .txt, temp_*)..." >&2
+    echo "正在清除日誌檔案 errorlog.txt 內的歷史資料..." >&2
     
     # 刪除所有功能腳本可能產生的日誌檔案
     # 根據提供的腳本片段，日誌檔名包含: *_errors_*.log, temp_*.log, temp_*.txt
-    find . -maxdepth 1 -type f \( -name "*-error-*.log" -o -name "-temp-*.log" -o -name "folderstate*.txt" \) -delete
+    find . -maxdepth 1 -type f \( -name "errorlog.txt" \) -delete
     echo "---" >&2
     echo " ✅ 日誌清理完成。" >&2
     echo "---" >&2
@@ -62,6 +62,7 @@ function clean_logs() {
 
 # 執行主要轉換腳本前的「標記與檢查」預處理
 function pre_process_check() {
+    > errorlog.txt
     # 步驟 1: 執行 MARKDOWN_SCRIPT (核心信標掃描)
     if [ -f "$MARKDOWN_SCRIPT" ]; then
         echo "▶️  啓動 ${MARKDOWN_SCRIPT} 腳本..." >&2
@@ -81,11 +82,9 @@ function pre_process_check() {
         ./"$F_RENAME_SCRIPT"
         echo "---" >&2
         echo "✅ ${F_RENAME_SCRIPT} 執行完成。" >&2
-        echo "---" >&2
     else
         echo "---" >&2
         echo "❌ 錯誤：找不到 ${F_RENAME_SCRIPT}！" >&2
-        echo "---" >&2
     fi
 }
 
@@ -95,7 +94,6 @@ function execute_with_confirm() {
     local scripts_to_run=("$@")
     read -r -p "❓ 確認執行 ${option_name} 嗎？ (Y/N 或 y/n): " response
     echo "---" >&2
-    
     if [[ "$response" =~ ^[Yy]$ ]]; then
         # 標準流程和單獨執行流程，需先執行預處理
         if [ "$option_name" != "資料夾狀態" ]; then
@@ -106,6 +104,7 @@ function execute_with_confirm() {
         for script in "${scripts_to_run[@]}"; do
             if [ "$i" -gt 0 ]; then
                 if [ -f "$script" ]; then
+                    echo "---" >&2
                     echo "▶️  啓動 ${script} 腳本..." >&2
                     ./"$script"
                     if [ $? -ne 0 ]; then
@@ -120,11 +119,8 @@ function execute_with_confirm() {
             i=$((i+1))
         done
         return 0
-        echo "---" >&2
     else
-        echo "---" >&2
         echo "操作已取消。" >&2
-        echo "---" >&2
         return 1
     fi
 }
@@ -177,6 +173,7 @@ while true; do
         # 選項 2: 資料夾標記及檢查 (執行預處理，不需要 Y/N 確認)
         2)
             pre_process_check
+            echo "---" >&2
             echo "確認資料夾狀態..." >&2
             echo "---" >&2
             ./"$FOLDER_STATE_SCRIPT"

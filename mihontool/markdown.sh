@@ -1,7 +1,7 @@
 #!/bin/bash
 
 MAIN_DIR="$(pwd)" 
-ERROR_LOG="$MAIN_DIR/markdown-error-$(date +%Y%m%d%H%M%S).log"
+ERROR_LOG="$MAIN_DIR/errorlog.txt"
 # **信標列表**
 MARKERS=("mi" "md" "m0" "m1" "m2" "m3" "m4" "mf")
 
@@ -10,11 +10,6 @@ echo "執行掃描標記漫畫資料夾..." >&2
 echo "掃描目標: $MAIN_DIR" >&2
 echo "錯誤日誌路徑: $(basename "$ERROR_LOG")" >&2
 echo "---" >&2
-
-# 確保 error log 是空的或創建它
-> "$ERROR_LOG"
-
-# --- 步驟 1: 移除主目錄中的空資料夾 ---
 echo "▶️  正在移除 '$MAIN_DIR' 中的空資料夾..." >&2
 find "$MAIN_DIR" -maxdepth 1 -type d -empty -not -path "$MAIN_DIR" -exec rm -rf {} \;
 echo "   ✅ 空資料夾清理完成。" >&2
@@ -26,7 +21,6 @@ process_folder() {
 
     echo "▶️  正在掃描: $TARGET_DIR" >&2
     
-    # 修正語法錯誤：使用 'fi' 結束 if 語句
     if [ "$TARGET_DIR" == "." ]; then 
         return
     fi
@@ -36,9 +30,9 @@ process_folder() {
 
     # === 檢查 mf 標記並跳過 (只增不減邏輯) ===
     if [ -f "$TARGET_DIR/mf" ]; then
-        echo "   ❌ 偵測到錯誤標記 ➡️  跳過。" >&2
-
-        local ERROR_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') - [MF-SKIP] 資料夾: $TARGET_DIR - 偵測到 ❌ 標記跳過。"
+        echo "   ❌ 偵測到錯誤標記。" >&2
+        echo "   ➡️  將標記錯誤記錄到 errorlog.txt 內。" >&2
+        local ERROR_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') - ❌ 資料夾: $TARGET_DIR - 偵測到錯誤跳過。"
         echo "$ERROR_MESSAGE" >> "$ERROR_LOG"
         echo "---" >&2
 
@@ -49,6 +43,7 @@ process_folder() {
     # 嘗試進入目錄
     cd "$TARGET_DIR" || { 
     ERROR_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') - 資料夾: $TARGET_DIR - ❌ 嚴重錯誤：無法進入目錄。"
+    echo "   ➡️  將標記錯誤記錄到 errorlog.txt 內。" >&2
     echo "$ERROR_MESSAGE" >> "$ERROR_LOG"
     cd "$MAIN_DIR"
     echo "---" >&2
@@ -63,64 +58,87 @@ process_folder() {
         [ -f "$marker" ] && rm "$marker"
     done
 
-    # --- 條件判斷主邏輯 (保持不變) ---
-    IMAGE_COUNT=$(find . -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" \) | wc -l)
-    SUBDIR_COUNT=$(find . -maxdepth 1 -type d -not -name "." | wc -l)
+    # --- (!! V6: 移除了 check_chapter_continuity 函式 !!) ---
+
+    # --- 條件判斷主邏輯 (V6 - 恢復空資料夾檢查，移除連續性檢查) ---
+    
+    # 1. 取得計數
+    IMAGE_COUNT=$(find . -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.webp" \) | wc -l)
+    HAS_CHAPTER_CBZ_COUNT=$(find . -maxdepth 1 -type f -iname "chapter_*.cbz" | wc -l)
+    HAS_CHAPTER_DIR_COUNT=$(find . -maxdepth 1 -type d -iname "chapter_*" | wc -l)
     
     MARKER_FOUND=0
-    
-    # [ A, B 區塊邏輯保持不變 ]
-    
-    if [ "$IMAGE_COUNT" -eq 1 ]; then
-        HAS_COVER_FILE=$(find . -maxdepth 1 -type f -iname "cover.*" | wc -l)
-        HAS_CBZ=0
-        if [ -s "chapter_1.cbz" ]; then HAS_CBZ=1; fi
-        HAS_NON_EMPTY_DIR=0
-        if [ -d "chapter_1" ] && [ "$(find "chapter_1" -type f | wc -l)" -gt 0 ]; then HAS_NON_EMPTY_DIR=1; fi
-        STRUCTURE_COUNT=$((HAS_CBZ + HAS_NON_EMPTY_DIR))
-        
-        if [ "$STRUCTURE_COUNT" -eq 2 ]; then
-            echo "   ❌ 結構混亂：同時存在 chapter_1 資料夾和 chapter_1.cbz。" >&2
-            touch mf
-            ERROR_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') -  ❌ 資料夾: $CURRENT_FOLDER_NAME - 結構混亂。"
-            echo "$ERROR_MESSAGE" >> "$ERROR_LOG"
-        elif [ "$HAS_COVER_FILE" -gt 0 ]; then
-            if [ "$HAS_CBZ" -eq 1 ] && [ "$HAS_NON_EMPTY_DIR" -eq 0 ]; then
-                touch md 
-                echo "   ✅ 標記成功: 有 cover.ext 且 chapter_1.cbz 存在。" >&2
-                MARKER_FOUND=1
-            elif [ "$HAS_NON_EMPTY_DIR" -eq 1 ] && [ "$HAS_CBZ" -eq 0 ]; then
-                touch mi 
-                echo "   ✅ 標記成功: 有 cover.ext 且 chapter_1 資料夾不為空。" >&2
-                MARKER_FOUND=1
-            fi
-        elif [ "$HAS_COVER_FILE" -eq 0 ]; then
-            if [ "$STRUCTURE_COUNT" -eq 1 ]; then
-                touch m3
-                echo "   ⚠️  標記成功: 結構存在 (單一 CBZ 或 資料夾)，但封面遺失。" >&2
-                MARKER_FOUND=1
-            fi
-        fi
-    elif [ "$IMAGE_COUNT" -gt 1 ] && [ "$SUBDIR_COUNT" -eq 0 ]; then
-        HAS_IMAGE_PREFIX=$(find . -maxdepth 1 -type f -regex ".*image_[0-9][0-9][0-9]\..*" | wc -l)
-        ALL_NON_WEBP=$(find . -maxdepth 1 -type f -not -iname "*.webp" | grep -E '\.(jpg|jpeg|png|gif|bmp)$' | wc -l)
 
-        if [ "$HAS_IMAGE_PREFIX" -gt 0 ] && [ "$ALL_NON_WEBP" -eq 0 ]; then
-            touch m4
-            echo "   📝 標記成功: 資料夾內需調整 chapter_1 架構。" >&2
+    # ---
+    # 邏輯 1: (m3) 結構混亂 (任何 CBZ 和 Dir 混合存在)
+    # ---
+    if [ "$HAS_CHAPTER_CBZ_COUNT" -gt 0 ] && [ "$HAS_CHAPTER_DIR_COUNT" -gt 0 ]; then
+        touch m3 
+        echo "   ⚠️  標記成功: 結構混亂，同時存在 chapter_n.cbz 和 chapter_n 資料夾，需做進一步檢查。" >&2
+        MARKER_FOUND=1
+    
+    # ---
+    # 邏輯 2: (md) 僅存在 CBZ 結構 (不檢查連續性)
+    # ---
+    elif [ "$HAS_CHAPTER_CBZ_COUNT" -gt 0 ] && [ "$HAS_CHAPTER_DIR_COUNT" -eq 0 ]; then
+        touch md 
+        echo "   ✅ 標記成功: 偵測到 chapter_n.cbz 結構，合計 $HAS_CHAPTER_CBZ_COUNT 個。" >&2
+        MARKER_FOUND=1
+
+    # ---
+    # 邏輯 3: (mi) 僅存在 Dir 結構 (!!恢復空資料夾檢查!!)
+    # ---
+    elif [ "$HAS_CHAPTER_DIR_COUNT" -gt 0 ] && [ "$HAS_CHAPTER_CBZ_COUNT" -eq 0 ]; then
+
+        # (!!恢復!!) 檢查 (Condition 4): 確保至少一個 chapter_n 資料夾不是空的
+        local ALL_CHAPTER_DIRS_EMPTY=1 # 假設全空
+        while IFS= read -r -d $'\0' chap_dir; do
+            # find ... -print -quit: 找到第一個檔案就停止並印出，-n 檢查是否有印出
+            if [ -n "$(find "$chap_dir" -type f -print -quit)" ]; then
+                ALL_CHAPTER_DIRS_EMPTY=0 # 找到檔案，標記為 "非全空"
+                break
+            fi
+        done < <(find . -maxdepth 1 -type d -iname "chapter_*" -print0)
+        
+        if [ "$ALL_CHAPTER_DIRS_EMPTY" -eq 1 ]; then
+            echo "   ❌ 標記成功: 偵測到 chapter 資料夾，但所有資料夾都沒有圖片，標記錯誤。" >&2
+            # MARKER_FOUND 保持為 0...
+        else
+            # (已移除連續性檢查)
+            touch mi 
+            echo "   ✅ 標記成功: 偵測到 chapter 資料夾，合計 $HAS_CHAPTER_DIR_COUNT 個。" >&2
             MARKER_FOUND=1
-        elif [ "$HAS_IMAGE_PREFIX" -gt 0 ] && [ "$ALL_NON_WEBP" -gt 0 ]; then
-            touch m2
-            echo "   📝 標記成功: 圖片經過 image_XXX 標準化命名，未經過 .webp 格式轉換。" >&2
-            MARKER_FOUND=1
-        elif [ "$ALL_NON_WEBP" -eq 0 ] && [ "$HAS_IMAGE_PREFIX" -eq 0 ]; then
-            touch m0
-            echo "   📝 標記成功: 所有圖片經過 .webp 格式轉換，未經過 image_XXX 標準化命名。" >&2
-            MARKER_FOUND=1
-        elif [ "$ALL_NON_WEBP" -gt 0 ] && [ "$HAS_IMAGE_PREFIX" -eq 0 ]; then
-            touch m1
-            echo "   📝 標記成功: 資料夾未經過處理。" >&2
-            MARKER_FOUND=1
+        fi
+
+    # ---
+    # 邏輯 4: (原 m0/m1/m2/m4 邏輯) 平鋪資料夾
+    # ---
+    elif [ "$HAS_CHAPTER_CBZ_COUNT" -eq 0 ] && [ "$HAS_CHAPTER_DIR_COUNT" -eq 0 ]; then
+        
+        # 取得總子目錄數 (如果_COUNT=0, 表示為平鋪)
+        local SUBDIR_COUNT=$(find . -maxdepth 1 -type d -not -name "." | wc -l)
+        
+        if [ "$IMAGE_COUNT" -gt 1 ] && [ "$SUBDIR_COUNT" -eq 0 ]; then
+            HAS_IMAGE_PREFIX=$(find . -maxdepth 1 -type f -regex ".*image_[0-9][0-9][0-9]\..*" | wc -l)
+            ALL_NON_WEBP=$(find . -maxdepth 1 -type f -not -iname "*.webp" | grep -E '\.(jpg|jpeg|png|gif|bmp)$' | wc -l)
+
+            if [ "$HAS_IMAGE_PREFIX" -gt 0 ] && [ "$ALL_NON_WEBP" -eq 0 ]; then
+                touch m4
+                echo "   📝 標記成功: 資料夾需調整架構。" >&2
+                MARKER_FOUND=1
+            elif [ "$HAS_IMAGE_PREFIX" -gt 0 ] && [ "$ALL_NON_WEBP" -gt 0 ]; then
+                touch m2
+                echo "   📝 標記成功: 圖片都已做 image_ 標準化命名, 但未轉換 webp 格式。" >&2
+                MARKER_FOUND=1
+            elif [ "$ALL_NON_WEBP" -eq 0 ] && [ "$HAS_IMAGE_PREFIX" -eq 0 ]; then
+                touch m0
+                echo "   📝 標記成功: 圖片都已轉換 webp 格式，但需要做 image_ 標準化命名, 。" >&2
+                MARKER_FOUND=1
+            elif [ "$ALL_NON_WEBP" -gt 0 ] && [ "$HAS_IMAGE_PREFIX" -eq 0 ]; then
+                touch m1
+                echo "   📝 標記成功: 資料夾未經過處理。" >&2
+                MARKER_FOUND=1
+            fi
         fi
     fi
     
@@ -129,9 +147,9 @@ process_folder() {
     # ----------------------------------------------------
     if [ "$MARKER_FOUND" -eq 0 ]; then
         touch mf
-        ERROR_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') -  ❌ 資料夾: $CURRENT_FOLDER_NAME - 搜尋到標記錯誤。"
+        ERROR_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') - ❌ 資料夾: $CURRENT_FOLDER_NAME - 標記錯誤。"
         echo "$ERROR_MESSAGE" >> "$ERROR_LOG"
-        echo "   ❌ 搜尋到錯誤標記，記錄到 markdown-error-$(date '+%Y%m%d%H%M%S').log。" >&2
+        echo "   ➡️  將標記錯誤記錄到 errorlog.txt 內。" >&2
     fi
     
     cd "$MAIN_DIR"
@@ -145,6 +163,6 @@ find . -maxdepth 1 -type d -not -name "." | while read -r folder; do
 done
 
 echo "掃描及標記資料夾已完成。" >&2
-echo "請檢查 $ERROR_LOG 以查看錯誤詳情。" >&2
+echo "請檢查 errorlog.txt 以查看錯誤詳情。" >&2
 
 exit 0

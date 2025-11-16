@@ -4,6 +4,7 @@
 SOURCE_EXTS="jpg,jpeg,png,bmp,JPG,JPEG,PNG,BMP"
 TARGET_EXT="webp"
 QUALITY=80
+ERROR_LOG="errorlog.txt"
 
 echo "---" >&2
 echo "執行 webp 轉換..." >&2 # 導向 STDERR
@@ -70,7 +71,7 @@ while IFS= read -r -d $'\0' file; do
                 # 轉換成功後刪除原始檔案
                 rm "$file"
             else
-                echo "   ❌ 檔案 $file 轉換失敗。" >&2
+                echo "$(date '+%Y-%m-%d %H:%M:%S') -  ❌ 資料夾: $DIR_PATH - 檔案: $(basename "$file") - 轉換失敗。" >> "$ERROR_LOG"
                 DIR_FAILURE_FLAG=true # 設置目錄失敗標記
             fi
         fi
@@ -80,8 +81,7 @@ while IFS= read -r -d $'\0' file; do
     # 3. 檢查目錄狀態並更新信標 (修改此處邏輯)
     if $DIR_FAILURE_FLAG; then
         # *** 變更點：轉換失敗時，將標記轉換為 mf ***
-        echo "   ❌ 轉換失敗，新增錯誤標記。" >&2
-        
+        echo "   ❌ 資料夾內有檔案轉換失敗，新增錯誤標記。" >&2
         # 移除舊標記
         rm -f "$DIR_PATH/$MARKER_PRESENT"
         # 新增 mf 標記 (Marker Failure)
@@ -104,5 +104,6 @@ while IFS= read -r -d $'\0' file; do
 done
 
 echo "轉換作業完成。" >&2
+echo "檔案轉換錯誤（若有的話）請查看 errorlog.txt。" >&2
 
 exit 0

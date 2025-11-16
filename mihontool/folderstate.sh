@@ -27,7 +27,6 @@ for DIR_PATH_FULL in */ ; do
     # 移除 Globbing 產生的結尾斜線 (例如: 'Manga01/' -> 'Manga01')
     DIR_PATH="${DIR_PATH_FULL%/}"
 
-    # 🚨 關鍵修正：排除 STATS_FILE 自身 (如果它被錯誤識別為資料夾)
     if [ "$DIR_PATH" == "$STATS_FILE" ]; then
         continue
     fi

@@ -5,6 +5,7 @@
 TARGET_EXTENSIONS="jpg jpeg png webp JPG JPEG PNG WEBP"
 NEW_NAME_PREFIX="image_" # 新檔名開頭 (例如: image_001.jpg)
 DIGIT_COUNT=3          # 編號位數 (例如: 3位數會產生 001, 002...)
+ERROR_LOG="errorlog.txt"
 
 echo "---" >&2
 echo "執行標準化命名..." >&2
@@ -75,7 +76,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
 
         # 執行更名
         if ! mv -f "$old_file" "$new_file_path"; then
-            echo "   ❌ 目標檔案 $old_file 更名失敗，停止後續操作。)" >&2
+            echo "$(date '+%Y-%m-%d %H:%M:%S') - ❌ 資料夾: $DIR_PATH - 檔案: $(basename "$old_file") - 標準化命名失敗。" >> "$ERROR_LOG"
             rename_ok=false
             break
         else
@@ -95,8 +96,8 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
         touch "$DIR_PATH/$NEXT_MARKER"
         echo "---" >&2
     else
-        # 更名失敗，維持舊信標 (m1/m0)，等待下次處理
-        echo "   ❌ 處理失敗，等待下次處理。" >&2
+        # 更名失敗，直接標記 mf
+        echo "   ❌ 資料夾內部有圖片命名失敗，需手動檢查。" >&2
         rm -f "$DIR_PATH/$MARKER_PRESENT"
         touch "${DIR_PATH}/mf"
     fi

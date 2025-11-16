@@ -85,7 +85,7 @@
 |`forcerename`|重新命名及排序|`image_001.ext`, `image_002.ext`, `image_n.ext` 排序|
 |`actionmove`|移動檔案及調整架構|將 `image_n.webp` 移入 `chapter_1` 及定義 `image_001.webp` 作爲 `cover.webp` 使用|
 |`packcbz`|封裝 `chapter_1.cbz`|封裝完畢之後移除 `chapter_1` 資料夾|
-|`frename`|檢查封面是否存在|`anyname.ext`變更爲`cover.ext`|
+|`covercheck`|檢查資料夾結構|檢查`markdown`檢查不出的標記|
 |`mastercontrol`|控制台|統合執行流程|
 
 ```
@@ -104,7 +104,7 @@
  ✅ 腳本 packcbz.sh 權限已設置。
  ✅ 腳本 folderstate.sh 權限已設置。
  ✅ 腳本 markdown.sh 權限已設置。
- ✅ 腳本 frename.sh 權限已設置。
+ ✅ 腳本 covercheck.sh 權限已設置。
 ---
 首次啓動執行檢查結果會在下一次選擇項目時清除。
 ---
