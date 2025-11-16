@@ -45,7 +45,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     
     # 安全檢查 (終端信標跳過)
     if [ -f "${DIR_PATH}/mi" ] || [ -f "${DIR_PATH}/md" ]; then
-        echo "   ✅ 已完成或封裝 ➡️ 跳過: $DIR_PATH" >&2
+        echo "   ✅ 已完成或封裝 ➡️ 跳過。" >&2
         rm -f "$DIR_PATH/$MARKER_PRESENT"
         continue 
     fi

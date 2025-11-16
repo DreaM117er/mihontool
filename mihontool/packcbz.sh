@@ -13,7 +13,7 @@ echo "執行多章節結構封裝 (.cbz) ..." >&2
 TOTAL_DIRS=$(find . -mindepth 1 -maxdepth 1 -type d -exec test -f "{}/mi" \; -print | wc -l)
 
 if [ "$TOTAL_DIRS" -eq 0 ]; then
-    echo "未找到任何帶有 'mi' 標記的資料夾需要封裝，腳本執行完畢。" >&2
+    echo "未找到任何需要進行封裝資料夾，腳本執行完畢。" >&2
     exit 0
 fi
 
@@ -33,7 +33,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     
     # --- 安全檢查：如果已經有 md 信標，跳過 ---
     if [ -f "$DIR_PATH/md" ]; then
-        echo "➡️ $DIR_PATH: 已有 'md' 標記，跳過。" >&2
+        echo "➡️ $DIR_PATH: 已封裝處理。" >&2
         [ -f "$DIR_PATH/mi" ] && rm "$DIR_PATH/mi"
         continue
     fi
@@ -65,7 +65,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     # (!!修正!!) 這裡 "$HAS_CONFLICT" 現在會是 0 或 1 (不再是空字串)
     if [ "$HAS_CONFLICT" -eq 1 ]; then
         # 偵測到衝突，標記 mf 並跳到下一個資料夾
-        echo "   ❌ 標記 mf 並中止此資料夾處理。" >&2
+        echo "   ❌ 標記錯誤並中止此資料夾處理。" >&2
         rm -f "$DIR_PATH/mi" "$DIR_PATH/m3" # 移除 mi 或 m3
         touch "$DIR_PATH/mf"
         echo "---" >&2
@@ -79,7 +79,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     # 找出所有 chapter_n 資料夾 (確保至少有一個)
     CHAPTERS_FOUND_COUNT=$(find "$DIR_PATH" -maxdepth 1 -type d -iname "chapter_*" | wc -l)
     if [ "$CHAPTERS_FOUND_COUNT" -eq 0 ]; then
-        echo "   ⚠️  $DIR_PATH: 標記為 'mi' 但未找到任何 'chapter_n' 資料夾，跳過。" >&2
+        echo "   ⚠️  標記為可封裝但未找到任何 'chapter_n' 資料夾 ➡️ 跳過。" >&2
         echo "---" >&2
         continue
     fi

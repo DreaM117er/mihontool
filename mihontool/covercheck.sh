@@ -147,7 +147,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
         
         else
             # mi 或 md 驗證通過，保持原樣
-            echo "   ✅ 檢查完畢: 結構正常" >&2
+            echo "   ✅ 檢查完畢: 結構正常。" >&2
         fi
     fi
     
