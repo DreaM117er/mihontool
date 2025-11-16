@@ -1,4 +1,4 @@
-# `mi`hontool
+# mihontool
 
 ## 說明
 
