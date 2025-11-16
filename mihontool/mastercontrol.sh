@@ -108,7 +108,7 @@ function execute_with_confirm() {
                     echo "▶️  啓動 ${script} 腳本..." >&2
                     ./"$script"
                     if [ $? -ne 0 ]; then
-                        echo "⚠️ ${script} 執行失敗，流程中斷。" >&2
+                        echo "⚠️  ${script} 執行失敗，流程中斷。" >&2
                         return 1
                     fi
                 else

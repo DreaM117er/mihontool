@@ -79,7 +79,7 @@ find . -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' DIR
     # 找出所有 chapter_n 資料夾 (確保至少有一個)
     CHAPTERS_FOUND_COUNT=$(find "$DIR_PATH" -maxdepth 1 -type d -iname "chapter_*" | wc -l)
     if [ "$CHAPTERS_FOUND_COUNT" -eq 0 ]; then
-        echo "   ⚠️ $DIR_PATH: 標記為 'mi' 但未找到任何 'chapter_n' 資料夾，跳過。" >&2
+        echo "   ⚠️  $DIR_PATH: 標記為 'mi' 但未找到任何 'chapter_n' 資料夾，跳過。" >&2
         echo "---" >&2
         continue
     fi
